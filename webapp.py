@@ -1,5 +1,7 @@
 from flask import *
 from flask import session as login_session
+from functools import wraps
+
 from database import *
 from werkzeug.utils import secure_filename
 from passlib.hash import pbkdf2_sha256 as crypt
@@ -7,8 +9,11 @@ import os
 import operator
 
 
+
 app= Flask(__name__)
 app.secret_key = "MY_SUPER_SECRET_KEY"
+
+
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 PROFILEVOL_FOLDER = 'static/profilevol'
 PROFILEORG_FOLDER = 'static/profile'
@@ -16,12 +21,29 @@ BACKGROUND_FOLDER = 'static/background'
 app.config['PROFILEORG_FOLDER'] = PROFILEORG_FOLDER
 app.config['BACKGROUND_FOLDER'] = BACKGROUND_FOLDER
 app.config['PROFILEVOL_FOLDER'] = PROFILEVOL_FOLDER
+
+
+def login_r(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in login_session:
+            return f(*args, **kwargs)
+        else:
+            flash("You need to login first")
+            return redirect(url_for('login'))
+
+    return wrap
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 @app.route('/')
 def home():
-    return render_template('login.html')
+    
+        return render_template('login.html')
+
+   
+
 
 #@app.route("/search",methods=['GET','POST'])
 #def search():
@@ -62,15 +84,22 @@ def login():
             return render_template('login.html')
         if(confirmpassvol!=None):
             user=session.query(Volunteers).filter_by(email = email).first()
+            login_session['logged_in'] = True
             login_session['id']=user.id
             login_session['type']="vol"
+
+            
+        
             organizations=sortbyinterest(user)
-            return render_template("homevol.html",user=user,organizations=organizations)
+            print(login_session["id"])
+            return redirect(url_for("homevol",user=user,organizations=organizations))
         if(confirmpassorg!=None):
             user=session.query(Organizations).filter_by(email = email).first()
             #login_session['id']=user.id
+            login_session['logged_in'] = True
             login_session['type']="org"
             login_session['organization_id'] = user.id
+
             return redirect(url_for("homeorg",user=user))
 def sortbyinterest(user):
     user_interests=user.interests.split(',')
@@ -157,6 +186,7 @@ def editprofile(user_id):
  #user = session.query(Volunteers).filter_by(id=user_id).first()
     
  #  return render_template('volunteer.html', user=user, user_id = user.id)
+@login_r
 @app.route('/homeorg', methods = ['GET','POST'])
 def homeorg():
     all_requests = session.query(Requests).all()
@@ -201,12 +231,13 @@ def search():
 
 
 
-
+@login_r
 @app.route('/homevol', methods = ['GET','POST'])
 def homevol():
     total_hours = 0
     a = session.query(VolunteeringHours).filter_by(volunteer_id = login_session['id']).all()
     i = login_session['id']
+    print(login_session['id'])
     volunteer = session.query(Volunteers).filter_by(id = login_session['id']).first()
     goal = volunteer.goal_hour
     print(float(goal))
@@ -219,8 +250,9 @@ def homevol():
     f = total_hours * 100
     precent = f / goal
     print(float(precent))
+    
 
-    return render_template('homevol.html',precent = precent, volunteer = volunteer, a = a)
+    return render_template('homevol.html',precent = precent, volunteer = volunteer, a = a,user = volunteer)
 @app.route('/signup', methods = ['GET','POST'])
 def signup():
     flag=0
@@ -366,13 +398,18 @@ def delete(id):
     reqs=session.query(Requests).filter_by(volunteer_id=login_session['id']).all()
     return redirect(url_for('myrequests'))
 
-
+@login_r
 @app.route('/place/<int:place_id>')
 def place(place_id):
-    login_session['organization_id']=place_id
+    login_session['logged_in'] = True
+    print(login_session['id'])
+    #login_session['organization_id']=place_id
+    user = session.query(Volunteers).filter_by(id = login_session['id']).first()
     place = session.query(Organizations).filter_by(id = place_id).first()
+    hour = session.query(VolunteeringHours).filter_by(volunteer_id = login_session['id']).first()
     r = session.query(Requests).filter_by(volunteer_id = login_session['id']).first()
-    return render_template('place.html',place_id = place.id, place = place,user_type=login_session['type'], r =r)
+    return render_template('place.html',place_id = place.id, place = place,user_type=login_session['type'], r =r,user = user,hour = hour)
+@login_r
 @app.route('/find')
 def find():
     user=session.query(Volunteers).filter_by(id = login_session['id']).first()
@@ -441,7 +478,7 @@ def confirm_feedback(nominee_id):
         session.commit()
         return redirect('homeorg')
 
-
+@login_r
 @app.route('/my_volunteers')
 def my_volunteers():
     my = session.query(Requests).filter_by(organization_id = login_session['organization_id']).all()
@@ -460,7 +497,9 @@ def volunteer_calendar():
     volunteer = session.query(Volunteers).first()
     return render_template('volunteer_calendar.html')
 
-
+@app.route('/confirmations')
+def confirmations():
+    return render_template('confirmation.html')
 #@app.route('/volunteeringhours')
 #def volunteeringhours():
 #if request.method
