@@ -84,7 +84,7 @@ class Feedback(Base):
 
 
 
-engine = create_engine('sqlite:///database.db')
+engine = create_engine('postgres://gecjdthbwofrtz:660fc3e2aba43bc58d9d85ed1759df64b1996abf2322b3b49d3ce19f8e6fefd1@ec2-107-22-251-55.compute-1.amazonaws.com:5432/d7u29ilfljh6hi')
 Base.metadata.create_all(engine)
 
 DBSession = sessionmaker(bind=engine, autoflush=False)
