@@ -5,46 +5,82 @@
 <head>
 	<title></title>
 </head>
+<style type="text/css">
+	aside{
+	    padding: 1em;
+	    overflow: hidden;
+	    float: right;
+
+	}
+	section{
+		float: left;
+	    max-width: 160px;
+	    margin: 0;
+	    padding: 1em;
+		
+	}
+</style>
 <body>
-<center><h1> Welcome {{org.name}}</h1></center>
-<h2>Requests</h2>
+<section>
+	<span style="font-family: monospace;"><iframe src="https://calendar.google.com/calendar/embed?src=sgk3vv0b1i506nvp4pjrquf2nc%40group.calendar.google.com&ctz=Asia/Jerusalem" style="border: 0" width="800" height="600" frameborder="0" scrolling="no"></iframe> </span>
+{% for i in my %}
+{% for u in v %}
+{% if i.id == u.id %}
+{% if i.accepted == 1 %}
 
-{% for i in all_requests %}
-
-{% for u in volunteers %}
-
-	{% if i.id == u.id %}
-
-
-	{% if i.accepted == 0 %}
+	<p>Name: {{u.name}} </p>
 
 
-	<h4>Name: <strong>{{u.name}}</strong></h4>
-	
-	
+{% endif %}
+{% endif %}
 
-			<h4>Start time {{i.start_time}} </h4>
+{% endfor %}
+{% endfor %}
+
+<link type=”text/css” rel=”stylesheet” href=”969ff39784188d8d017a0c60c8f2558aembedcompiled_fastui.css”>
+<script type=”text/javascript” src=”969ff39784188d8d017a0c60c8f2558aembedcompiled__en_gb.js”></script>
+
+</section>
+<aside>
+	<center><h1> Welcome {{org.name}}</h1></center>
+	<h2>Requests</h2>
+	{% for i in all_requests %}
+
+	{% for u in volunteers %}
+
+		{% if i.id == u.id %}
 
 
+		{% if i.accepted == 0 %}
+
+
+		<h4>Name: <strong>{{u.name}}</strong></h4>
+		
 		
 
-	
-	<h4>How many hours: {{i.length}} </h4>
+				<h4>Start time {{i.start_time}} </h4>
 
-	<h4> Date: {{i.date}}</h4>
-	
 
-<form action = "{{url_for('accept',nominee_id = i.id)}}" method = "post">
+			
 
-<input type = "submit" value = "Accept">
+		
+		<h4>How many hours: {{i.length}} </h4>
 
-</form>
+		<h4> Date: {{i.date}}</h4>
+		
 
-<form action = "{{url_for('reject',nominee_id = i.id)}}" method = "post">
+	<form action = "{{url_for('accept',nominee_id = i.id)}}" method = "post">
 
-<input type = "submit" value = "Reject">
+	<input type = "submit" value = "Accept">
 
-</form>
+	</form>
+
+	<form action = "{{url_for('reject',nominee_id = i.id)}}" method = "post">
+
+	<input type = "submit" value = "Reject">
+
+	</form>
+</aside>
 {% endif %}
 {% endif %}
 
