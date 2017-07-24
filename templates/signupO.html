@@ -118,17 +118,18 @@ span.psw {
 <form action = "{{url_for('signupO')}}"  method = "post" enctype="multipart/form-data"><br>
 <input type = "text" name = "name" placeholder="Company Name"><br>
 <input type = "email" name = "email" placeholder="Company email"><br>
-<input type = "text" name = "city" placeholder="City you operate in">
 <input type = "password" name = "password" placeholder="Password"><br>
 <input type = "date" name = "creationdate" placeholder=""><br>
 <input type = "text" name = "description" placeholder ="Description"><br>
 <input type = "text" name = "shortdescription" placeholder="Short description"><br><br>
 <label>City:</label>
-<select>
-  <option value="volvo">Volvo</option>
-  <option value="saab">Saab</option>
-  <option value="mercedes">Mercedes</option>
-  <option value="audi">Audi</option>
+<select name = "city">
+<option value = "Jerusalem">Jerusalem</option>
+<option value = "Hadarom">Hadarom</option>
+<option value = "Hazafon">Hazafon</option>
+<option value = "Hamerkaz">Hamerkaz</option>
+<option value = "Haifa">Haifa</option>
+<option value = "Tel-aviv">Tel-aviv</option>
 </select>
 <h2 style="color: gray "> Upload a profile photo:</h2><br><input type="file" name = "profile"><br><br>
 <h2 style="color: gray "> Upload a background that represents your organization </h2><br><input type="file" name = "background"><br><br>

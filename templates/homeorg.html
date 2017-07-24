@@ -63,15 +63,18 @@
 <h2>Hours/Feedback Requests</h2>
 
 {% for a in  all_hour_requests %}
+
 {% for z in volunteers %}
 
-	{% if a.id == z.id %}
+
+	{% if a.volunteer_id == z.id %}
 	
 
 	{% if a.worked == 0 %}
 
 
-	<p>Name: {{z.name}} </p>
+
+	<a href = ""><p>Name: {{z.name}} </p></a>
 
 <form action = "{{url_for('confirm_hours',nominee_id = a.id)}}" method = "post">
 

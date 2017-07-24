@@ -50,22 +50,25 @@
 {% if r.accepted == 1 %} 
     <h1>Confirm hours or feedback</h1>
 
-<form action = "{{url_for('ask_hours')}}" method = "post">
+<form action = "{{url_for('ask_hours', place_id = place.id)}}" method = "post">
+<p>How many hours have you volunteered here?</p>
+<input type = "number" name = "hour" placeholder="Hours">
 
-<p>You volunteered X hours at X 
 
 <input type = "submit" value = "Confirm Hours" class = "btn btn-lg">
 </p>
 </form>
 
-<form action = "{{url_for('ask_feedback')}}" method="post">
+<form action = "{{url_for('ask_feedback', place_id = place.id)}}" method="post">
 
 <input type = "submit" value = "Send request for feedback">
 
 </form>    
    
-{% else %}      
-                <form action="{{url_for('volunteer')}}" method="post">
+{% else %}    
+
+
+                <form action="{{url_for('volunteer',place_id = place.id)}}" method="post">
     <input type="time" name="start_time">
     <input type="number" placeholder="how much hours" name="length">
     <input type = "date" name = "date">

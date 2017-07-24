@@ -23,16 +23,20 @@ app.config['BACKGROUND_FOLDER'] = BACKGROUND_FOLDER
 app.config['PROFILEVOL_FOLDER'] = PROFILEVOL_FOLDER
 
 
-def login_r(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in login_session:
-            return f(*args, **kwargs)
-        else:
-            flash("You need to login first")
-            return redirect(url_for('login'))
+# Check if a user is logged in.
+# takes no arguments.
+# return true if the user is logged in, false otherwise
+def user_logged_in():
+    # @wraps(f)
+    # def wrap(*args, **kwargs):
+    if 'logged_in' in login_session:
+        print("logged in")
+        return True
+    else:
+        print("not logged in")
+            # flash("You need to login first")
+        return False
 
-    return wrap
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -61,8 +65,24 @@ def logout():
 @app.route('/login' , methods=['GET','POST'])
 def login():
     if(request.method=='GET'):
-        return render_template('login.html')
+        #take to appropriate homepage (depends on user type!)
+        if 'logged_in' in login_session:
+            if login_session['type'] == 'vol':
+                return redirect(url_for('homevol'))
+            if login_session['type'] == 'org':
+                return redirect(url_for('homeorg'))
+        else:
+            return render_template('login.html')
+        # if user_logged_in(): 
+        #     if login_session['type'] == 'vol':
+        #         return render_template('homevol.html')
+        #     else:
+        #         return render_template('homeorg.html')
+        # else:
+
+        #     return render_template('login.html')
     if (request.method=='POST'):
+        #check if they are already logged in! if so redirect!
         email=request.form['email']
         password=request.form['password']
         login_session['email'] = email
@@ -89,7 +109,7 @@ def login():
             login_session['type']="vol"
 
             
-        
+
             organizations=sortbyinterest(user)
             print(login_session["id"])
             return redirect(url_for("homevol",user=user,organizations=organizations))
@@ -120,6 +140,7 @@ def sortbyinterest(user):
     return result
 def sortbycity(user):
     user_city = user.city
+
     org = session.query(Organizations).all()
     okay_org = []
     for o in org:
@@ -186,11 +207,17 @@ def editprofile(user_id):
  #user = session.query(Volunteers).filter_by(id=user_id).first()
     
  #  return render_template('volunteer.html', user=user, user_id = user.id)
-@login_r
+#@login_r
 @app.route('/homeorg', methods = ['GET','POST'])
 def homeorg():
+    if 'logged_in' in login_session:
+        print(login_session['organization_id'])
+        pass
+    else:
+        return redirect(url_for('login'))
+
     all_requests = session.query(Requests).all()
-    all_hour_requests = session.query(Request_Hour).all()
+    all_hour_requests = session.query(VolunteeringHours).all()
     all_feedback = session.query(Feedback).all()
     volunteers = session.query(Volunteers).all()
     org = session.query(Organizations).filter_by(id = login_session['organization_id']).first()
@@ -231,28 +258,53 @@ def search():
 
 
 
-@login_r
+#@login_r
+
 @app.route('/homevol', methods = ['GET','POST'])
 def homevol():
+    # login_r()
+    if 'logged_in' in login_session:
+        pass
+    else:
+        return redirect(url_for('login'))
     total_hours = 0
     a = session.query(VolunteeringHours).filter_by(volunteer_id = login_session['id']).all()
     i = login_session['id']
     print(login_session['id'])
-    volunteer = session.query(Volunteers).filter_by(id = login_session['id']).first()
-    goal = volunteer.goal_hour
+    user = session.query(Volunteers).filter_by(id = login_session['id']).first()
+    
+  
+
+    goal = user.goal_hour
     print(float(goal))
 
     for volunteer in a:
-        if volunteer.volunteer_id == i:
-            total_hours += volunteer.hours
+                if volunteer.worked ==1:
+                    total_hours += volunteer.hours
        
     print(total_hours)
     f = total_hours * 100
     precent = f / goal
     print(float(precent))
+    stillreqs=session.query(Requests).filter_by(volunteer_id=login_session['id'],accepted=0).all()
+    acceptedreqs=session.query(Requests).filter_by(volunteer_id=login_session['id'],accepted=1).all()
+    
+    volnames=[]
+    orgnames=[]
+    acvolnames=[]
+    acorgnames=[]
+    for req in stillreqs:
+        volnames.append(session.query(Volunteers).filter_by(id=req.volunteer_id).first().name)
+        orgnames.append(session.query(Organizations).filter_by(id=req.organization_id).first().name)
+
+    for req in acceptedreqs:
+        acvolnames.append(session.query(Volunteers).filter_by(id=req.volunteer_id).first().name)
+        acorgnames.append(session.query(Organizations).filter_by(id=req.organization_id).first().name)
     
 
-    return render_template('homevol.html',precent = precent, volunteer = volunteer, a = a,user = volunteer)
+    return render_template('homevol.html',precent = precent, a = a, user=user,tillreqs=stillreqs,
+        acceptedreqs=acceptedreqs,acorgnames=acorgnames,
+        acvolnames=acorgnames,type=login_session['type'],volnames=volnames,orgnames=orgnames)
 @app.route('/signup', methods = ['GET','POST'])
 def signup():
     flag=0
@@ -375,20 +427,8 @@ def signupO():
  #   return render_template('place.html')
 @app.route('/homevol')
 def myrequests():
-    stillreqs=session.query(Requests).filter_by(volunteer_id=login_session['id'],accepted=0).all()
-    acceptedreqs=session.query(Requests).filter_by(volunteer_id=login_session['id'],accepted=1).all()
 
-    volnames=[]
-    orgnames=[]
-    acvolnames=[]
-    acorgnames=[]
-    for req in stillreqs:
-        volnames.append(session.query(Volunteers).filter_by(id=req.volunteer_id).first().name)
-        orgnames.append(session.query(Organizations).filter_by(id=req.organization_id).first().name)
-    for req in acceptedreqs:
-        acvolnames.append(session.query(Volunteers).filter_by(id=req.volunteer_id).first().name)
-        acorgnames.append(session.query(Organizations).filter_by(id=req.organization_id).first().name)
-    return render_template("homevol.html",stillreqs=stillreqs,acceptedreqs=acceptedreqs,acorgnames=acorgnames,acvolnames=acorgnames,type=login_session['type'],volnames=volnames,orgnames=orgnames)
+    return render_template("homevol.html",s)
 
 @app.route('/delete/<int:id>')
 def delete(id):
@@ -398,72 +438,137 @@ def delete(id):
     reqs=session.query(Requests).filter_by(volunteer_id=login_session['id']).all()
     return redirect(url_for('myrequests'))
 
-@login_r
+#@login_r
 @app.route('/place/<int:place_id>')
 def place(place_id):
-    login_session['logged_in'] = True
+    total_hours = 0
+    a = session.query(VolunteeringHours).filter_by(volunteer_id = login_session['id']).all()
+    i = login_session['id']
     print(login_session['id'])
+    user = session.query(Volunteers).filter_by(id = login_session['id']).first()
+    
+  
+
+    goal = user.goal_hour
+    print(float(goal))
+
+    for volunteer in a:
+                if volunteer.worked ==1:
+                    total_hours += volunteer.hours
+       
+    print(total_hours)
+    f = total_hours * 100
+    precent = f / goal
+    print(float(precent))
+  
     #login_session['organization_id']=place_id
     user = session.query(Volunteers).filter_by(id = login_session['id']).first()
     place = session.query(Organizations).filter_by(id = place_id).first()
     hour = session.query(VolunteeringHours).filter_by(volunteer_id = login_session['id']).first()
     r = session.query(Requests).filter_by(volunteer_id = login_session['id']).first()
-    return render_template('place.html',place_id = place.id, place = place,user_type=login_session['type'], r =r,user = user,hour = hour)
-@login_r
+    return render_template('place.html',place_id = place.id, place = place,user_type=login_session['type'],precent = precent, a = a,
+     r =r,user = user,hour = hour)
+#@login_r
 @app.route('/find')
 def find():
+    total_hours = 0
+    a = session.query(VolunteeringHours).filter_by(volunteer_id = login_session['id']).all()
+    i = login_session['id']
+    print(login_session['id'])
+    user = session.query(Volunteers).filter_by(id = login_session['id']).first()
+    
+  
+
+    goal = user.goal_hour
+    print(float(goal))
+
+    for volunteer in a:
+                if volunteer.worked ==1:
+                    total_hours += volunteer.hours
+       
+    print(total_hours)
+    f = total_hours * 100
+    precent = f / goal
+    print(float(precent))
     user=session.query(Volunteers).filter_by(id = login_session['id']).first()
+    organizations = session.query(Organizations).all()
+
 
     #places = session.query(Organizations).all()
-    organizations=sortbyinterest(user)
-    organizations1 = sortbycity(user)
-    return render_template('find.html', organizations = organizations,user = user,organizations1 = organizations1)
-@app.route('/volunteer',methods=['GET','POST'])
-def volunteer():
+    counter = 0 
+    c_organizations = []
+    for org in organizations:
+            if org.city == user.city:
+                c_organizations.append(org)
+    i_organizations = []
+    for org in organizations:
+        for f in org.fields:
+            for i in user.interests:
+                if i == f:
+                    counter +=1
+        if counter >= 1:
+            i_organizations.append(org)
+
+    all_orgs = []
+    for org in i_organizations:
+        if org.city == user.city:
+            all_orgs.append(org)
+    print(all_orgs)
+
+
+    
+
+    #organizations=sortbyinterest(user)
+    #organizations1 = sortbycity(user)
+    return render_template('find.html', all_orgs = all_orgs , user = user, a=a , precent = precent)
+@app.route('/volunteer/<int:place_id>',methods=['GET','POST'])
+def volunteer(place_id):
     if request.method=='GET':
         return render_template('volunteer.html')
     start_time = request.form['start_time']
     length = request.form['length']
     date = request.form['date']
-    request1=Requests(volunteer_id=login_session['id'],organization_id=login_session['organization_id'],
+    place = session.query(Organizations).filter_by(id = place_id).first()
+    request1=Requests(volunteer_id=login_session['id'],organization_id=place_id,
         start_time=start_time,accepted=0,worked=0,length=length, date = date)
-    hours = VolunteeringHours(volunteer_id= login_session['id'], organization_id = login_session['organization_id'],
+    hours = VolunteeringHours(volunteer_id= login_session['id'], organization_id = place_id,
         hours = length)
 
     session.add(hours)
 
     session.add(request1)
     session.commit()
-    return place(login_session['organization_id'])
+    return redirect(url_for('place', place_id = place_id))
 
-@app.route('/ask_hours', methods = ['GET','POST'])
-def ask_hours():
+@app.route('/ask_hours/<int:place_id>', methods = ['GET','POST'])
+def ask_hours(place_id):
     if request.method == 'POST':
-        new_request = Request_Hour(volunteer_id = login_session['id'], organization_id = login_session['organization_id'],worked = 0)
+        hour = request.form['hour']
+        new_request = VolunteeringHours(volunteer_id = login_session['id'], organization_id = place_id,worked = 0, hours = hour )
         session.add(new_request)
         session.commit()
         #return place(login_session['organization_id'])
-        return place(login_session['organization_id'])
+        return redirect(url_for('place', place_id = place_id))
 
 @app.route('/confirm_hours/<int:nominee_id>', methods = ['GET','POST'])
 def confirm_hours(nominee_id):
     if request.method == 'POST':
         print("d")
         print(nominee_id)
-        nominee = session.query(Request_Hour).filter_by(id = nominee_id).first()
-        print(nominee)
+        nominee = session.query(VolunteeringHours).filter_by(id = nominee_id).first()
+        print(nominee.worked)
 
         
         nominee.worked = 1
         session.commit()
         return redirect('homeorg')
-@app.route('/ask_feedback',methods = ['GET','POST'])
-def ask_feedback():
+@app.route('/ask_feedback/<int:place_id>',methods = ['GET','POST'])
+def ask_feedback(place_id):
     if request.method == 'POST':
-        new_feedback = Feedback(volunteer_id = login_session['id'], organization_id = login_session['organization_id'])
+        new_feedback = Feedback(volunteer_id = login_session['id'], organization_id = place_id)
         session.add(new_feedback)
         session.commit()
-        return render_template('homevol.html')
+        return redirect(url_for('place', place_id = place_id))
 @app.route('/confirm_feedback/<int:nominee_id>', methods = ['GET','POST'])
 def confirm_feedback(nominee_id):
     if request.method == 'POST':
@@ -478,7 +583,7 @@ def confirm_feedback(nominee_id):
         session.commit()
         return redirect('homeorg')
 
-@login_r
+#@login_r
 @app.route('/my_volunteers')
 def my_volunteers():
     my = session.query(Requests).filter_by(organization_id = login_session['organization_id']).all()
